@@ -11,7 +11,6 @@ import ReportPage from './pages/ReportPage'
 import RulesPage from './pages/RulesPage'
 import OverstayPage from './pages/OverstayPage'
 import {
-  HospitalsPage,
   DiagnosesPage,
   ProceduresPage,
   CmgsPage,
@@ -37,12 +36,12 @@ export default function App() {
               <Route path="report" element={<ReportPage />} />
               <Route path="rules" element={<RulesPage />} />
               <Route path="overstay" element={<OverstayPage />} />
-              <Route path="hospitals" element={<HospitalsPage />} />
               <Route path="diagnoses" element={<DiagnosesPage />} />
               <Route path="procedures" element={<ProceduresPage />} />
               <Route path="cmgs" element={<CmgsPage />} />
               <Route path="casetypes" element={<CaseTypesPage />} />
               <Route path="discharges" element={<DischargesPage />} />
+              <Route path="hospitals" element={<Navigate to="/settings" replace />} />
               <Route path="users" element={<UsersPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
