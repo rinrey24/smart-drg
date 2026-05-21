@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Search, Plus, Edit2, Trash2, ChevronDown, X,
-  Upload, SlidersHorizontal, Download, Loader2, Building2,
+  Upload, SlidersHorizontal, Download, Loader2, Building2, Save,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/contexts/AppContext';
@@ -286,10 +286,16 @@ function MasterModal({ config, row, onClose, onSave, saving }) {
           ))}
 
           <div className="flex items-center gap-2 pt-1">
-            <Button type="button" variant="outline" size="md" className="flex-1" onClick={onClose} disabled={saving}>
+            <Button type="button" variant="outline" size="md" className="flex-1" icon={X} onClick={onClose} disabled={saving}>
               Batal
             </Button>
-            <Button type="submit" size="md" className="flex-1" disabled={saving}>
+            <Button
+              type="submit"
+              size="md"
+              className="flex-1"
+              disabled={saving}
+              icon={!saving ? (isEdit ? Save : Plus) : undefined}
+            >
               {saving ? <Loader2 size={14} className="animate-spin" /> : isEdit ? 'Simpan Perubahan' : 'Tambah'}
             </Button>
           </div>
@@ -319,10 +325,18 @@ function DeleteModal({ config, row, onClose, onConfirm, deleting }) {
           Tindakan ini tidak dapat dibatalkan.
         </p>
         <div className="flex gap-2 mt-5">
-          <Button type="button" variant="outline" size="md" className="flex-1" onClick={onClose} disabled={deleting}>
+          <Button type="button" variant="outline" size="md" className="flex-1" icon={X} onClick={onClose} disabled={deleting}>
             Batal
           </Button>
-          <Button type="button" variant="danger" size="md" className="flex-1" onClick={onConfirm} disabled={deleting}>
+          <Button
+            type="button"
+            variant="danger"
+            size="md"
+            className="flex-1"
+            onClick={onConfirm}
+            disabled={deleting}
+            icon={!deleting ? Trash2 : undefined}
+          >
             {deleting ? <Loader2 size={14} className="animate-spin" /> : 'Hapus'}
           </Button>
         </div>

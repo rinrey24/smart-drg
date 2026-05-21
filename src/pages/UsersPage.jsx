@@ -12,6 +12,7 @@ import {
   Eye,
   EyeOff,
   Loader2,
+  Save,
 } from 'lucide-react';
 import { cn, formatNumber, initials } from '@/lib/utils';
 import { useApp } from '@/contexts/AppContext';
@@ -239,7 +240,7 @@ function UserModal({ user, onClose, onSave }) {
                     form.status === opt.value
                       ? opt.value === 'active'
                         ? 'bg-[#E4F4EB] border-[#2E9A5A] text-[#2E9A5A]'
-                        : 'bg-[#E4E9F1] border-[#94A3B8] text-[#64748B]'
+                        : 'bg-[#FBE6E3] border-[#C8392E] text-[#C8392E]'
                       : 'border-[#E4E9F1] text-[#94A3B8] hover:bg-[#F5F7FB]'
                   )}
                 >
@@ -251,8 +252,20 @@ function UserModal({ user, onClose, onSave }) {
 
           {/* Actions */}
           <div className="flex items-center gap-2 pt-1">
-            <Button type="button" variant="outline" size="md" className="flex-1" onClick={onClose}>Batal</Button>
-            <Button type="submit" size="md" className="flex-1">{isEdit ? 'Simpan Perubahan' : 'Tambah Pengguna'}</Button>
+            <Button type="button" variant="outline" size="md" className="flex-1" icon={X} onClick={onClose}>
+              Batal
+            </Button>
+            <Button
+              type="submit"
+              size="md"
+              className="flex-1"
+              icon={!saving ? (isEdit ? Save : UserPlus) : undefined}
+              disabled={saving}
+            >
+              {saving
+                ? <Loader2 size={14} className="animate-spin" />
+                : isEdit ? 'Simpan Perubahan' : 'Tambah Pengguna'}
+            </Button>
           </div>
         </form>
       </div>
