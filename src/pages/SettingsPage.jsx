@@ -137,6 +137,7 @@ function HospitalProfileTab() {
     setSaving(true);
     try {
       await updateHospital(profileId, {
+        kode_rs:               form.kode_rs,
         code:                  form.kode_rs,
         name:                  form.nama,
         class:                 form.kelas,
