@@ -255,16 +255,8 @@ function UserModal({ user, onClose, onSave }) {
             <Button type="button" variant="outline" size="md" className="flex-1" icon={X} onClick={onClose}>
               Batal
             </Button>
-            <Button
-              type="submit"
-              size="md"
-              className="flex-1"
-              icon={!saving ? (isEdit ? Save : UserPlus) : undefined}
-              disabled={saving}
-            >
-              {saving
-                ? <Loader2 size={14} className="animate-spin" />
-                : isEdit ? 'Simpan Perubahan' : 'Tambah Pengguna'}
+            <Button type="submit" size="md" className="flex-1" icon={isEdit ? Save : UserPlus}>
+              {isEdit ? 'Simpan Perubahan' : 'Tambah Pengguna'}
             </Button>
           </div>
         </form>
