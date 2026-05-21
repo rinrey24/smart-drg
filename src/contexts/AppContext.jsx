@@ -7,6 +7,7 @@ import {
   useRef,
 } from 'react';
 import { getImportJobs } from '@/lib/api';
+import AuthContext from './AuthContext';
 
 const AppContext = createContext(null);
 let _toastId = 0;
@@ -43,6 +44,10 @@ export function normalizeImportJob(job) {
 
 
 export function AppProvider({ children }) {
+  // ─── Read auth token dari AuthContext (AppProvider is nested inside AuthProvider) ─
+  const auth = useContext(AuthContext);
+  const token = auth?.token ?? localStorage.getItem('token');
+
   // ─── Active Import Job ──────────────────────────────────────────────────────
   const [activeJobId, setActiveJobIdState] = useState(() =>
     localStorage.getItem('activeJobId') ?? null
@@ -58,6 +63,8 @@ export function AppProvider({ children }) {
   const [importJobs, setImportJobs] = useState([]);
 
   const fetchImportJobs = useCallback(async () => {
+    // Jangan panggil API jika belum login — hindari 401 dan ECONNREFUSED spam
+    if (!localStorage.getItem('token')) return;
     try {
       const res = await getImportJobs({ page: 1, limit: 50 });
       // Backend: { message, data: [...], meta: { pagination } }
@@ -78,7 +85,11 @@ export function AppProvider({ children }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { fetchImportJobs(); }, [fetchImportJobs]);
+  // Fetch hanya saat ada token — juga auto-refresh ketika user login (token berubah dari null → ada)
+  useEffect(() => {
+    if (token) fetchImportJobs();
+    else setImportJobs([]); // bersihkan saat logout
+  }, [fetchImportJobs, token]);
 
   // ─── Toast ──────────────────────────────────────────────────────────────────
   const [toasts, setToasts] = useState([]);

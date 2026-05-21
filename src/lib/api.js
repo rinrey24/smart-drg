@@ -24,9 +24,15 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Hanya redirect jika user SEBELUMNYA sudah login (ada token).
+      // Jika belum punya token sama sekali, tidak perlu redirect —
+      // cukup reject promise dan biarkan halaman login bekerja normal.
+      const wasLoggedIn = !!localStorage.getItem('token');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      if (wasLoggedIn && window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
