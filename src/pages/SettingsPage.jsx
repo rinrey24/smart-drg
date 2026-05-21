@@ -133,10 +133,10 @@ function HospitalProfileTab() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!profileId) return;
+    if (!profileId || !form.kode_rs) return;
     setSaving(true);
     try {
-      await updateHospital(profileId, {
+      await updateHospital(form.kode_rs, {
         kode_rs:               form.kode_rs,
         code:                  form.kode_rs,
         name:                  form.nama,
