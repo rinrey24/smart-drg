@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Search, Plus, Edit2, Trash2, ChevronDown, X,
-  Upload, SlidersHorizontal, Download, Loader2,
+  Upload, SlidersHorizontal, Download, Loader2, Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useApp } from '@/contexts/AppContext';
@@ -599,8 +599,359 @@ function MasterDataPage({ type }) {
   );
 }
 
+// ── Info Row (used by HospitalsPage profile) ──────────────────────────────────
+function InfoRow({ label, value }) {
+  return (
+    <div>
+      <dt className="text-[11px] font-semibold text-[#94A3B8] uppercase tracking-wide mb-0.5">{label}</dt>
+      <dd className="text-sm text-[#0E1A2B]">
+        {value != null && value !== '' ? value : <span className="text-[#CBD5E1]">—</span>}
+      </dd>
+    </div>
+  );
+}
+
+// ── Hospital Profile Page ──────────────────────────────────────────────────────
+// Profile view for the single hospital using the system (replaces old list/table)
+export function HospitalsPage() {
+  const { toast } = useApp();
+
+  const [profile,  setProfile]  = useState(null);
+  const [loading,  setLoading]  = useState(true);
+  const [showEdit, setShowEdit] = useState(false);
+  const [saving,   setSaving]   = useState(false);
+  const [form,     setForm]     = useState({});
+
+  const KELAS_OPTIONS = ['A', 'B', 'C', 'D'];
+  const KELAS_COLOR   = {
+    A: 'bg-[#E8F0FB] text-[#1E4F91]',
+    B: 'bg-[#E4F4EB] text-[#2E9A5A]',
+    C: 'bg-[#FDF1DD] text-[#C97A12]',
+    D: 'bg-[#F5E6F6] text-[#7B3FA0]',
+  };
+
+  const normalizeProfile = (b) => ({
+    id:      b.id,
+    kode_rs: b.code    ?? '',
+    nama:    b.name    ?? '',
+    kelas:   b.class   ?? 'B',
+    alamat:  b.address ?? '',
+    telepon: b.phone   ?? '',
+    max_rj:  b.max_visit_rj_permonth != null ? String(b.max_visit_rj_permonth) : '',
+    max_ri:  b.max_visit_ri_permonth != null ? String(b.max_visit_ri_permonth) : '',
+  });
+
+  const fetchProfile = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res  = await getHospitals({ page: 1, limit: 1 });
+      const raw  = res.data?.data ?? res.data ?? [];
+      const item = Array.isArray(raw) ? raw[0] : raw;
+      setProfile(item?.id ? normalizeProfile(item) : null);
+    } catch {
+      setProfile(null);
+    }
+    setLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => { fetchProfile(); }, [fetchProfile]);
+
+  const openEdit = () => {
+    setForm({ ...profile });
+    setShowEdit(true);
+  };
+
+  const setF = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!profile) return;
+    setSaving(true);
+    try {
+      await updateHospital(profile.id, {
+        code:                  form.kode_rs,
+        name:                  form.nama,
+        class:                 form.kelas,
+        address:               form.alamat,
+        phone:                 form.telepon || null,
+        max_visit_rj_permonth: form.max_rj ? Number(form.max_rj) : null,
+        max_visit_ri_permonth: form.max_ri ? Number(form.max_ri) : null,
+      });
+      setProfile({ ...profile, ...form });
+      toast('Profil rumah sakit berhasil diperbarui.', 'success');
+      setShowEdit(false);
+    } catch (err) {
+      const msg = err?.response?.data?.message ?? 'Gagal menyimpan perubahan.';
+      toast(Array.isArray(msg) ? msg.join(', ') : msg, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-[#0E1A2B]">Profil Rumah Sakit</h1>
+          <p className="text-sm text-[#64748B] mt-0.5">
+            Informasi profil rumah sakit yang menggunakan sistem Smart DRG.
+          </p>
+        </div>
+        {!loading && profile && (
+          <Button onClick={openEdit} icon={Edit2} variant="outline">
+            Edit Profil
+          </Button>
+        )}
+      </div>
+
+      {/* ── Profile Card ── */}
+      {loading ? (
+        <div className="bg-white border border-[#E4E9F1] rounded-2xl shadow-sm p-16 flex items-center justify-center gap-2 text-sm text-[#94A3B8]">
+          <Loader2 size={16} className="animate-spin" />
+          Memuat profil...
+        </div>
+      ) : !profile ? (
+        <div className="bg-white border border-[#E4E9F1] rounded-2xl shadow-sm p-16 text-center">
+          <Building2 size={32} className="text-[#94A3B8] mx-auto mb-3" />
+          <p className="text-sm font-semibold text-[#0E1A2B]">Data rumah sakit belum tersedia</p>
+          <p className="text-xs text-[#64748B] mt-1">
+            Hubungi administrator untuk mengisi data profil rumah sakit.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-white border border-[#E4E9F1] rounded-2xl shadow-sm overflow-hidden">
+          {/* ── Hero banner ── */}
+          <div className="px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4 border-b border-[#E4E9F1] bg-gradient-to-r from-[#F5F7FB] to-white">
+            <div className="w-14 h-14 rounded-2xl bg-[#E8F0FB] flex items-center justify-center shrink-0">
+              <Building2 size={28} className="text-[#1E4F91]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-bold text-[#0E1A2B] leading-tight">
+                  {profile.nama || '—'}
+                </h2>
+                <span className={cn(
+                  'inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold',
+                  KELAS_COLOR[profile.kelas] ?? 'bg-[#E4E9F1] text-[#64748B]'
+                )}>
+                  Kelas {profile.kelas}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                <span className="font-mono text-xs font-semibold text-[#1E4F91] bg-[#E8F0FB] px-2 py-0.5 rounded">
+                  {profile.kode_rs || '—'}
+                </span>
+                {profile.alamat && (
+                  <>
+                    <span className="text-[#CBD5E1]">·</span>
+                    <span className="text-xs text-[#64748B]">{profile.alamat}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Detail sections ── */}
+          <div className="divide-y divide-[#E4E9F1]">
+            {/* General info */}
+            <div className="px-6 py-5">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8] mb-4">
+                Informasi Umum
+              </h3>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5">
+                <InfoRow label="Nama Rumah Sakit" value={profile.nama} />
+                <InfoRow
+                  label="Kode RS"
+                  value={
+                    <span className="font-mono font-semibold text-[#1E4F91]">
+                      {profile.kode_rs || '—'}
+                    </span>
+                  }
+                />
+                <InfoRow
+                  label="Kelas"
+                  value={
+                    <span className={cn(
+                      'inline-block px-2 py-0.5 rounded-full text-[11px] font-bold',
+                      KELAS_COLOR[profile.kelas] ?? 'bg-[#E4E9F1] text-[#64748B]'
+                    )}>
+                      Kelas {profile.kelas || '—'}
+                    </span>
+                  }
+                />
+                <InfoRow label="Alamat / Kota"   value={profile.alamat}  />
+                <InfoRow label="Nomor Telepon"   value={profile.telepon} />
+              </dl>
+            </div>
+
+            {/* Visit limits */}
+            <div className="px-6 py-5">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8] mb-4">
+                Batas Kunjungan per Bulan
+              </h3>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-5">
+                <InfoRow
+                  label="Rawat Jalan (RJ)"
+                  value={
+                    profile.max_rj
+                      ? `${Number(profile.max_rj).toLocaleString('id-ID')} kunjungan / bulan`
+                      : null
+                  }
+                />
+                <InfoRow
+                  label="Rawat Inap (RI)"
+                  value={
+                    profile.max_ri
+                      ? `${Number(profile.max_ri).toLocaleString('id-ID')} kunjungan / bulan`
+                      : null
+                  }
+                />
+              </dl>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Modal ── */}
+      {showEdit && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) setShowEdit(false); }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E4E9F1] shrink-0">
+              <div>
+                <h2 className="text-sm font-bold text-[#0E1A2B]">Edit Profil Rumah Sakit</h2>
+                <p className="text-[11px] text-[#64748B] mt-0.5">Perbarui informasi profil rumah sakit</p>
+              </div>
+              <button
+                onClick={() => setShowEdit(false)}
+                className="p-1.5 rounded-lg text-[#64748B] hover:bg-[#E4E9F1] transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Scrollable form body */}
+            <form onSubmit={handleSave} className="px-6 py-5 flex flex-col gap-4 overflow-y-auto">
+              {/* Kode RS — read-only */}
+              <div>
+                <label className="block text-xs font-semibold text-[#0E1A2B] mb-1.5">Kode RS</label>
+                <input
+                  type="text"
+                  value={form.kode_rs ?? ''}
+                  readOnly
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E4E9F1] bg-[#F5F7FB] text-[#0E1A2B] opacity-70 cursor-not-allowed outline-none"
+                />
+                <p className="text-[10px] text-[#94A3B8] mt-0.5">Tidak dapat diubah</p>
+              </div>
+
+              {/* Nama */}
+              <div>
+                <label className="block text-xs font-semibold text-[#0E1A2B] mb-1.5">Nama Rumah Sakit</label>
+                <input
+                  type="text"
+                  value={form.nama ?? ''}
+                  onChange={(e) => setF('nama', e.target.value)}
+                  placeholder="RSUD Cipto Mangunkusumo"
+                  required
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E4E9F1] bg-white text-[#0E1A2B] placeholder:text-[#94A3B8] outline-none focus:border-[#1E4F91]/50 transition-all"
+                />
+              </div>
+
+              {/* Kelas */}
+              <div>
+                <label className="block text-xs font-semibold text-[#0E1A2B] mb-1.5">Kelas</label>
+                <div className="relative">
+                  <select
+                    value={form.kelas ?? 'B'}
+                    onChange={(e) => setF('kelas', e.target.value)}
+                    className="appearance-none w-full pl-3 pr-7 py-2 text-xs rounded-lg border border-[#E4E9F1] bg-white text-[#0E1A2B] outline-none focus:border-[#1E4F91]/50 cursor-pointer"
+                  >
+                    {KELAS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                  <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Alamat */}
+              <div>
+                <label className="block text-xs font-semibold text-[#0E1A2B] mb-1.5">Alamat / Kota</label>
+                <input
+                  type="text"
+                  value={form.alamat ?? ''}
+                  onChange={(e) => setF('alamat', e.target.value)}
+                  placeholder="Jl. Diponegoro No.71, Jakarta Pusat"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E4E9F1] bg-white text-[#0E1A2B] placeholder:text-[#94A3B8] outline-none focus:border-[#1E4F91]/50 transition-all"
+                />
+              </div>
+
+              {/* Telepon */}
+              <div>
+                <label className="block text-xs font-semibold text-[#0E1A2B] mb-1.5">Nomor Telepon</label>
+                <input
+                  type="text"
+                  value={form.telepon ?? ''}
+                  onChange={(e) => setF('telepon', e.target.value)}
+                  placeholder="021-1234567"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-[#E4E9F1] bg-white text-[#0E1A2B] placeholder:text-[#94A3B8] outline-none focus:border-[#1E4F91]/50 transition-all"
+                />
+              </div>
+
+              {/* Max visits */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[#0E1A2B] mb-1.5">Max Kunjungan RJ / Bulan</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.max_rj ?? ''}
+                    onChange={(e) => setF('max_rj', e.target.value)}
+                    placeholder="0"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E4E9F1] bg-white text-[#0E1A2B] placeholder:text-[#94A3B8] outline-none focus:border-[#1E4F91]/50 transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#0E1A2B] mb-1.5">Max Kunjungan RI / Bulan</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.max_ri ?? ''}
+                    onChange={(e) => setF('max_ri', e.target.value)}
+                    placeholder="0"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-[#E4E9F1] bg-white text-[#0E1A2B] placeholder:text-[#94A3B8] outline-none focus:border-[#1E4F91]/50 transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  className="flex-1"
+                  onClick={() => setShowEdit(false)}
+                  disabled={saving}
+                >
+                  Batal
+                </Button>
+                <Button type="submit" size="md" className="flex-1" disabled={saving}>
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : 'Simpan Perubahan'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Named exports ─────────────────────────────────────────────────────────────
-export function HospitalsPage()  { return <MasterDataPage type="hospitals"  />; }
 export function DiagnosesPage()  { return <MasterDataPage type="diagnoses"  />; }
 export function ProceduresPage() { return <MasterDataPage type="procedures" />; }
 export function CmgsPage()       { return <MasterDataPage type="cmgs"       />; }

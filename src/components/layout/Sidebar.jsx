@@ -46,7 +46,7 @@ const NAV_SECTIONS = [
   {
     label: 'Master Data',
     items: [
-      { to: '/hospitals', icon: Building2, label: 'Rumah Sakit' },
+      { to: '/hospitals', icon: Building2, label: 'Profil RS' },
       { to: '/diagnoses', icon: Stethoscope, label: 'Diagnosa ICD-10' },
       { to: '/procedures', icon: Activity, label: 'Prosedur ICD-9-CM' },
       { to: '/cmgs', icon: Layers, label: 'CMG' },
